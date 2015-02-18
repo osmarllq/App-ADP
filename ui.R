@@ -1,4 +1,4 @@
-library(shiny)
+library(shiny);library(leaflet)
 
 choices <- list(
   Institucionales = c('Desempeño Institucional'="IDIM_PROM_2005_2013",
@@ -55,7 +55,7 @@ choices <- list(
 shinyUI(navbarPage('Análisis Correlacional',
                    tabPanel('Mapa de Clusters (LISA)',
                             fluidRow(
-                              column(4,
+                              column(3,
                                      div(class='well',             
                                          selectInput("var1", label=h6("Variable 1:"), choices = choices
                                                      ,  selected='NBI_TOT_2005'),
@@ -73,24 +73,28 @@ shinyUI(navbarPage('Análisis Correlacional',
                                          p('por ',a('Osmar Loaiza'),a('<olloaizaq@unal.edu.co>'))
                                      )                    
                               ),
-                              column(8,                    
+                              column(9,                    
                                      fluidRow(
-                                       column(10,offset=1,                             
-                                              plotOutput("plot1", width="445px",height = "500px")
+                                       column(12,                             
+                                              leafletOutput("plot1", width="445px",height = "500px")
                                               
                                        )
-                                     ),                
+                                     ),
+                                     fluidRow( tagList(tags$div(
+                                       plotOutput("legend", width="480px",height = "85px"),style="text-align: center;" ))
+                                                     ),
+                                     br(),
                                      fluidRow(                    
-                                       column(4,offset=2,
+                                       column(3,
                                               radioButtons("signif", label=h6("Umbral de Significancia:"),
                                                            c("1%" = 0.01,
                                                              "5%" = 0.05,
                                                              "10%"=0.1),selected=0.05)
                                               
                                        ),                      
-                                       column(4,
+                                       column(3,
                                               numericInput('perm',label=h6('Numero de Permutaciones:'),
-                                                           value=1000,min=999,max=10000,step=100)                                                     
+                                                           value=1000,min=100,max=10000,step=100)                                                     
                                        )                                  
                                      )
                               )
@@ -118,7 +122,7 @@ shinyUI(navbarPage('Análisis Correlacional',
                                      fluidRow(                    
                                        div(class='well',p(em('Parámetros Test Boostrap de correlación')),
                                            numericInput('nsim',label=h6('Numero de Simulaciones:'),
-                                                        value=1000,min=999,max=10000,step=100),
+                                                        value=1000,min=100,max=10000,step=100),
                                            numericInput('conf',label=h6('Nivel de Confianza:'),
                                                         value=0.95,min=0.8,max=0.99,step=.01)
                                        )

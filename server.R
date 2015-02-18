@@ -9,6 +9,8 @@ source('fun/plot_classInt.R')
 require(boot);require(maptools);require(spdep);require(Matrix)
 require(RColorBrewer);require(maptools);require(foreign)
 require(sp);require(grid);require(lattice);require(rgeos)
+require(rgdal);require(leaflet)
+
 
 
 #---------------------------Total Energy Consumption----------------------------#
@@ -26,8 +28,17 @@ require(sp);require(grid);require(lattice);require(rgeos)
 #identical(row.names(ant),sapply(ant@polygons, function(x) slot(x,"ID"))) ## Check rownames
 #ant<-ant[order(row.names(ant)),] ## Re-order
 
+# ----- Set Coordinate System 
+#proj4string(ant) = CRS("+proj=tmerc +lat_0=4.596200417 +lon_0=-74.07750791700001 +k=1 +x_0=1000000 +y_0=1000000 +ellps=GRS80 +units=m +no_defs")
+
+# ----- Transform to EPSG 4326 - WGS84 (required)
+#map0 <- spTransform(ant, CRS("+proj=longlat +datum=WGS84"))
+
+# ----- simplification yields a SpatialPolygons class
+#map1<-gSimplify(map0,tol=0.01, topologyPreserve=TRUE)
+
 #options(save.defaults = list(encoding='Latin1'))
-#save(odh, data, ant, ascii=FALSE, file = "ShinyProj.RData")
+#save(odh, data, ant, map1, ascii=FALSE, file = "ShinyProj.RData")
 
 load(con <- gzfile('data/ShinyProj.RData',encoding='Latin1'))#;close(con)
 
@@ -41,6 +52,21 @@ corr <- function(data, indices) {
 # Setting Palette
 col <- palette()
 palette(c(col,'darkorange1'))
+
+# Cluster Map Palette
+brks <- c(0,1,2,3,4)
+colors <- c("white","red","blue",rgb(0,1,1),rgb(1,.55,0))
+
+#The following four lines code purpose is to generate the legend. For the
+#leaflet map. I export the legend to a jpeg file to insert it manually 
+#inside the shiny
+#bmp('legend.bmp')
+#plot(c(0,.5),c(0,.2),type='n',ylab='',xlab='',axes=FALSE)
+#legend('center',fill=c(colors[1],'white',colors[-1]),border=c('grey50','white',colors[-1]),bty='n',ncol=3,
+#       legend=c("Not Significant","","High-High","Low-Low","Low-High","High-Low"))
+#dev.off()
+
+
 
 # Labels for titles 
 
@@ -161,18 +187,26 @@ shinyServer(function(input, output, session) {
     }    
   })
   
+  #Legend for Bilisa plot
+  output$legend <- renderPlot({
+    
+    par(mai=c(0,0,0,0),pin=c(5,.9))
+    
+    plot(c(0,.5),c(0,.2),type='n',ylab='',xlab='',axes=FALSE)
+    legend('center',fill=c(colors[1],'white',colors[-1]),border=c('grey50','white',colors[-1]),bty='n',ncol=3,
+           legend=c("Not Significant","","High-High","Low-Low","Low-High","High-Low"))
+    title(sub=paste(val()[1],' vs. ',val()[2]),line=-0.9, font.sub=2)
+    
+    })
+  
   #Plot bi-LISA cluster map
-  output$plot1 <- renderPlot({    
+  output$plot1 <- renderLeaflet({    
     
-    #par(mar())  
-    plot.lisaPerm(bilisa(),ant,signif=input$signif,legend.title='',lty=3)
-    title(paste(val()[1],' vs. rezago de ',val()[2]),line=.5,cex.main=.9 )
-    title(sub=paste('Radio de Busqueda: ',input$hdist,'hrs',sep=''),line=.7,
-          cex.sub=1.1,font.sub=3)
+    fillCol <- colors[findInterval(clusterQuadrant(bilisa(),input$signif),brks,all.inside=FALSE)]
+    leaflet(data = map1) %>% addTiles() %>%
+      addPolygons(fillColor = fillCol, popup=data$MUNCIPIOS, fillOpacity=0.7,
+                  stroke=TRUE, weight=1, color='grey')
     
-    reg <- lm(lag.listw(lw(),data[,input$var2])~data[,input$var1])
-    inf <- influence.measures(reg)
-    points(coordinates(ant)*inf$is.inf[,'cov.r'],col='black',pch=20)    
   })
   
   #Plot scatterplot
