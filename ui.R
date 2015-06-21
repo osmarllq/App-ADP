@@ -1,4 +1,4 @@
-library(shiny);library(leaflet)
+﻿library(shiny);library(leaflet)
 
 choices <- list(
   Institucionales = c('Desempeño Institucional'="IDIM_PROM_2005_2013",
@@ -51,7 +51,7 @@ choices <- list(
                           'Gravedad'="Gravity","IA")  
 )
 
-# Define UI for application that plots random distributions
+# Define UI for application
 shinyUI(navbarPage('Análisis Correlacional',
                    tabPanel('Mapa de Clusters (LISA)',
                             fluidRow(
